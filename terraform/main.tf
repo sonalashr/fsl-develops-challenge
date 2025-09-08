@@ -1,9 +1,6 @@
-# In this file put all the logic to crete the proper infraestructure
-terraform {
-    required_providers {
-        # Add the provideres according to the challenges
-    }
+module "site" {
+  source        = "./modules/static-site"
+  project_name  = var.project_name
+  unique_prefix = var.unique_prefix
+  environment   = var.environment
 }
-
-
-# Add the resources relatedo to the provider
