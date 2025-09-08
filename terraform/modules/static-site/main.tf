@@ -1,16 +1,28 @@
-# Module to create a static website hosting in S3 with logging enabled
-
+# Logs bucket for CloudFront access logs
 resource "aws_s3_bucket" "logs" {
-    bucket = "${var.unique_prefix}-${var.project_name}-${var.environment}-logs"
-    force_destroy = true
+  bucket        = "${var.unique_prefix}-${var.project_name}-${var.environment}-logs"
+  force_destroy = true
 }
 
+# Enable Object Ownership so ACLs can be used (needed for CloudFront logs)
+resource "aws_s3_bucket_ownership_controls" "logs_controls" {
+  bucket = aws_s3_bucket.logs.id
+  rule {
+    object_ownership = "ObjectWriter"
+  }
+}
+
+# Allow the CloudFront log delivery group to write log objects
+resource "aws_s3_bucket_acl" "logs_acl" {
+  bucket     = aws_s3_bucket.logs.id
+  acl        = "log-delivery-write"
+  depends_on = [aws_s3_bucket_ownership_controls.logs_controls]
+}
+
+# (Optional but recommended) versioning on logs bucket
 resource "aws_s3_bucket_versioning" "logs_v" {
-    bucket = aws_s3_bucket.logs.id
-    versioning_configuration {
-        status = "Enabled"
-    }
-  
+  bucket = aws_s3_bucket.logs.id
+  versioning_configuration { status = "Enabled" }
 }
 
 # static bucket (private, accessed only via CloudFront OAC)
