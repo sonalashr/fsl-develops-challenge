@@ -31,16 +31,6 @@ jobs:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            ${{ secrets.AWS_REGION }}
-      
-      #debug step to see what variables.tf the runner sees
-      - name: Debug — show variables.tf the runner sees
-        run: |
-          pwd
-          ls -la
-          echo "--- terraform/variables.tf ---"
-          sed -n '1,80p' terraform/variables.tf
-          echo "--- module variables.tf ---"
-          sed -n '1,80p' terraform/modules/static-site/variables.tf
 
       # 3. Setup Terraform
       - name: Setup Terraform
