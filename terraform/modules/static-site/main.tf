@@ -129,23 +129,32 @@ resource "aws_cloudfront_distribution" "cdn" {
 data "aws_caller_identity" "me" {}
 
 data "aws_iam_policy_document" "site_policy" {
-    statement {
-       sid = "AllowCloudFrontServicePrincipalReadOnly"
-       effect = "Allow"
-       resources = [ aws_s3_bucket.site.arn,"${aws_s3_bucket.site.arn}/*"]
-          principals {
-            type = "service"
-            identifiers = ["cloudfront.amazonaws.com"]
-          }
-          condition {
-            test = "StringEquals"
-            variable = "AWS:SourceArn"
-            values = [aws_cloudfront_distribution.cdn.arn]
-          }
+  statement {
+    sid    = "AllowCloudFrontRead"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.site.arn}/*"
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
     }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.cdn.arn]
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "site_bp" {
-    bucket = aws_s3_bucket.site.id
-    policy = data.aws_iam_policy_document.site_policy.json
+  bucket = aws_s3_bucket.site.id
+  policy = data.aws_iam_policy_document.site_policy.json
 }
