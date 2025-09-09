@@ -1,16 +1,28 @@
-# Module to create a static website hosting in S3 with logging enabled
-
+# Logs bucket for CloudFront access logs
 resource "aws_s3_bucket" "logs" {
-    bucket = "${var.unique_prefix}-${var.project_name}-${var.environment}-logs"
-    force_destroy = true
+  bucket        = "${var.unique_prefix}-${var.project_name}-${var.environment}-logs"
+  force_destroy = true
 }
 
+# Enable Object Ownership so ACLs can be used (needed for CloudFront logs)
+resource "aws_s3_bucket_ownership_controls" "logs_controls" {
+  bucket = aws_s3_bucket.logs.id
+  rule {
+    object_ownership = "ObjectWriter"
+  }
+}
+
+# Allow the CloudFront log delivery group to write log objects
+resource "aws_s3_bucket_acl" "logs_acl" {
+  bucket     = aws_s3_bucket.logs.id
+  acl        = "log-delivery-write"
+  depends_on = [aws_s3_bucket_ownership_controls.logs_controls]
+}
+
+# (Optional but recommended) versioning on logs bucket
 resource "aws_s3_bucket_versioning" "logs_v" {
-    bucket = aws_s3_bucket.logs.id
-    versioning_configuration {
-        status = "Enabled"
-    }
-  
+  bucket = aws_s3_bucket.logs.id
+  versioning_configuration { status = "Enabled" }
 }
 
 # static bucket (private, accessed only via CloudFront OAC)
@@ -117,23 +129,32 @@ resource "aws_cloudfront_distribution" "cdn" {
 data "aws_caller_identity" "me" {}
 
 data "aws_iam_policy_document" "site_policy" {
-    statement {
-       sid = "AllowCloudFrontServicePrincipalReadOnly"
-       effect = "Allow"
-       resources = [ aws_s3_bucket.site.arn,"${aws_s3_bucket.site.arn}/*"]
-          principals {
-            type = "service"
-            identifiers = ["cloudfront.amazonaws.com"]
-          }
-          condition {
-            test = "StringEquals"
-            variable = "AWS:SourceArn"
-            values = [aws_cloudfront_distribution.cdn.arn]
-          }
+  statement {
+    sid    = "AllowCloudFrontRead"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.site.arn}/*"
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
     }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.cdn.arn]
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "site_bp" {
-    bucket = aws_s3_bucket.site.id
-    policy = data.aws_iam_policy_document.site_policy.json
+  bucket = aws_s3_bucket.site.id
+  policy = data.aws_iam_policy_document.site_policy.json
 }

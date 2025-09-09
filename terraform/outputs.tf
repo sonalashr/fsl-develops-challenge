@@ -13,6 +13,6 @@ output "distribution_id" {
 
 }
 
-output "distrbution_domain" {
-  value = module.site.distrbution_domain
+output "distribution_domain" {
+  value = module.site.distribution_domain
 }
