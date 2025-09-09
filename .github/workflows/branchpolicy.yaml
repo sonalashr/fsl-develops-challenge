@@ -1,0 +1,20 @@
+name: Branch policy
+on:
+  pull_request:
+    branches: [devel, stage, prod]
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          BASE="${{ github.base_ref }}"
+          HEAD="${{ github.head_ref }}"
+          echo "Checking $HEAD -> $BASE"
+
+          if [[ "$BASE" == "devel" && "$HEAD" == feature/* ]]; then exit 0; fi
+          if [[ "$BASE" == "stage" && "$HEAD" == "devel" ]]; then exit 0; fi
+          if [[ "$BASE" == "prod" && "$HEAD" == "stage" ]]; then exit 0; fi
+
+          echo "❌ Invalid PR: $HEAD → $BASE"
+          exit 1
