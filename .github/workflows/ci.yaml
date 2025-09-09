@@ -3,7 +3,9 @@ name: CI Pipeline
 on: 
   pull_request:
     branches:
-      - main
+      - devel
+      - stage
+      - prod
 
 permissions:
   contents: read
