@@ -8,7 +8,7 @@ output "logs_bucket" {
   
 }
 
-output "distrbution_domain" {
+output "distribution_domain" {
   value = aws_cloudfront_distribution.cdn.domain_name
   
 }
